@@ -39,6 +39,7 @@ class RecTextLineDataset(Dataset):
                 params = m_line.split('\t')
                 if len(params) == 2:
                     m_image_name, m_gt_text = params
+                    m_gt_text = m_gt_text[:-1]
                     if True in [c not in self.str2idx for c in m_gt_text]:
                         continue
                     self.labels.append((m_image_name, m_gt_text))
@@ -163,6 +164,10 @@ class RecDataLoader:
 
     def pack(self, batch_data):
         batch = {'img': [], 'label': []}
+        if len(batch_data) == 0:
+            print(f'batch data has length 0')
+            batch['img'] = torch.tensor(batch['img'], dtype=torch.float)
+            return batch
         # img tensor current shape: B,H,W,C
         all_same_height_images = [self.process.resize_with_specific_height(_['img'][0].numpy()) for _ in batch_data]
         max_img_w = max({m_img.shape[1] for m_img in all_same_height_images})

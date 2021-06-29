@@ -37,7 +37,9 @@ class CTCLabelConverter(object):
         # text = ''.join(text)
         # text = [self.dict[char] for char in text]
         d = []
-        batch_max_length = max(length)
+        batch_max_length = 0
+        if len(length) > 0:
+            batch_max_length = max(length)
         for s in text:
             t = [self.dict[char] for char in s]
             t.extend([0] * (batch_max_length - len(s)))

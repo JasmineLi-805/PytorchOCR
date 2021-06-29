@@ -1,0 +1,2 @@
+/Users/jasmineli/Desktop/PytorchOCR/ccpd-data/val/0130-0_4-302&470_483&530-478&530_302&527_307&470_483&473-0_0_22_25_16_25_31-64-3.jpg	皖AY1S17
+/Users/jasmineli/Desktop/PytorchOCR/ccpd-data/val/0392-1_0-227&453_522&564-518&564_227&557_231&453_522&460-0_0_4_3_32_26_32-124-3.jpg	皖AED828

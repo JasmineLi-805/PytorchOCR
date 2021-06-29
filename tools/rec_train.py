@@ -155,11 +155,16 @@ def evaluate(net, val_loader, loss_func, to_use_device, logger, converter, metri
     show_str = []
     with torch.no_grad():
         for batch_data in tqdm(val_loader):
+            if len(batch_data['label']) == 0:
+                print(f'batch_data[label] has length 0')
+                continue
             targets, targets_lengths = converter.encode(batch_data['label'])
             batch_data['targets'] = targets
             batch_data['targets_lengths'] = targets_lengths
             output = net.forward(batch_data['img'].to(to_use_device))
             loss = loss_func(output, batch_data)
+
+            # print(f'UPDATING LOSS!!!!!! loss = {loss}')
 
             nums += batch_data['img'].shape[0]
             acc_dict = metric(output, batch_data['label'])
@@ -171,6 +176,8 @@ def evaluate(net, val_loader, loss_func, to_use_device, logger, converter, metri
     result_dict['eval_loss'] /= len(val_loader)
     result_dict['eval_acc'] /= nums
     result_dict['norm_edit_dis'] = 1 - result_dict['norm_edit_dis'] / nums
+    # for key in result_dict:
+    #     print(f'result_dict[{key}] = {result_dict[key]}')
     logger.info(f"eval_loss:{result_dict['eval_loss']}")
     logger.info(f"eval_acc:{result_dict['eval_acc']}")
     logger.info(f"norm_edit_dis:{result_dict['norm_edit_dis']}")
@@ -226,6 +233,9 @@ def train(net, optimizer, scheduler, loss_func, train_loader, eval_loader, to_us
             for i, batch_data in enumerate(train_loader):  # traverse each batch in the epoch
                 current_lr = optimizer.param_groups[0]['lr']
                 cur_batch_size = batch_data['img'].shape[0]
+                if cur_batch_size == 0:
+                    print('cur_batch_size == 0, skip')
+                    continue
                 targets, targets_lengths = converter.encode(batch_data['label'])
                 batch_data['targets'] = targets
                 batch_data['targets_lengths'] = targets_lengths
@@ -233,6 +243,7 @@ def train(net, optimizer, scheduler, loss_func, train_loader, eval_loader, to_us
                 optimizer.zero_grad()
                 output = net.forward(batch_data['img'].to(to_use_device))
                 loss_dict = loss_func(output, batch_data)
+                # print(f'train loss = {loss_dict}')
                 loss_dict['loss'].backward()
                 torch.nn.utils.clip_grad_norm_(net.parameters(), 5)
                 optimizer.step()
@@ -271,6 +282,8 @@ def train(net, optimizer, scheduler, loss_func, train_loader, eval_loader, to_us
                             save_checkpoint(net_save_path, net, optimizer, logger, cfg, global_state=global_state)
                     elif train_options['ckpt_save_type'] == 'FixedEpochStep' and epoch % train_options['ckpt_save_epoch'] == 0:
                         shutil.copy(net_save_path, net_save_path.replace('latest.pth', f'{epoch}.pth'))
+                if i == int(all_step / 10):
+                    break
                 global_step += 1
             scheduler.step()
     except KeyboardInterrupt:
@@ -296,6 +309,7 @@ def main():
     # ===>
     to_use_device = torch.device(
         train_options['device'] if torch.cuda.is_available() and ('cuda' in train_options['device']) else 'cpu')
+    print(f'device used = {to_use_device}')
     set_random_seed(cfg['SEED'], 'cuda' in train_options['device'], deterministic=True)
 
     # ===> build network
